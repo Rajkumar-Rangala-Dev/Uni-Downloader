@@ -16,11 +16,12 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Expose port
+# Expose port (Railway will set PORT env var)
 EXPOSE 3000
 
 # Set production environment
 ENV NODE_ENV=production
+ENV PORT=3000
 
-# Start the application
-CMD ["npm", "start"]
+# Start the application on Railway's PORT
+CMD ["sh", "-c", "next start -p ${PORT}"]
