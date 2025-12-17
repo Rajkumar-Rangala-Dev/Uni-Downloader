@@ -26,7 +26,7 @@ class DownloadRequest(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "Universal Media Downloader API"}
+    return {"status": "ok", "message": "Universal Media Downloader API", "version": "2.0"}
 
 @app.post("/analyze")
 async def analyze(request: AnalyzeRequest):
