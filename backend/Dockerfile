@@ -2,7 +2,8 @@ FROM python:3.11-slim
 
 RUN apt-get update && \
     apt-get install -y ffmpeg nodejs npm && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    which ffmpeg && ffmpeg -version
 
 WORKDIR /app
 COPY requirements.txt ./
@@ -11,4 +12,4 @@ COPY . .
 
 # Railway uses PORT environment variable
 ENV PORT=8000
-CMD sh -c "uvicorn app:app --host 0.0.0.0 --port ${PORT}"
+CMD sh -c "echo 'FFmpeg location:' && which ffmpeg && uvicorn app:app --host 0.0.0.0 --port ${PORT}"

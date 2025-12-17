@@ -2,11 +2,15 @@ import yt_dlp
 import asyncio
 import os
 import random
+import shutil
 from ffmpeg_utils import merge_streams, convert_to_mp3
 from validators import detect_platform
 
 # Get browser for cookie extraction (chrome, firefox, edge, etc.) - empty string disables cookies
 COOKIE_BROWSER = os.getenv("COOKIE_BROWSER", "")
+
+# Auto-detect ffmpeg location
+FFMPEG_PATH = shutil.which("ffmpeg") or "/usr/bin/ffmpeg"
 
 # User agents to rotate and avoid bot detection
 USER_AGENTS = [
@@ -77,7 +81,7 @@ async def process_download(url, mode, file_id):
     common_opts = {
         "quiet": False,
         "no_warnings": False,
-        "ffmpeg_location": "/usr/bin",
+        "ffmpeg_location": os.path.dirname(FFMPEG_PATH) if FFMPEG_PATH else "/usr/bin",
         "user_agent": random.choice(USER_AGENTS),
         "extractor_retries": 5,
         "fragment_retries": 5,
