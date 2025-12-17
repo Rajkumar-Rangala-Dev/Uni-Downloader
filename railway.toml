@@ -1,0 +1,9 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "frontend/Dockerfile"
+watchPaths = ["frontend/**"]
+
+[deploy]
+startCommand = "npm start"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
