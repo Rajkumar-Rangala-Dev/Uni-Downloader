@@ -24,6 +24,10 @@ class DownloadRequest(BaseModel):
     url: str
     mode: str  # 'video' or 'mp3'
 
+@app.get("/")
+async def root():
+    return {"status": "ok", "message": "Universal Media Downloader API"}
+
 @app.post("/analyze")
 async def analyze(request: AnalyzeRequest):
     url = request.url

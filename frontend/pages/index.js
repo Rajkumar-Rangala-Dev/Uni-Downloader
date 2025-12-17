@@ -1,10 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import PlatformIcon from '../components/PlatformIcon';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
+// Auto-detect backend URL
+const getApiBase = () => {
+  if (typeof window === 'undefined') {
+    return process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000';
+  }
+  
+  // Use environment variable if set (for Railway/production)
+  if (process.env.NEXT_PUBLIC_API_BASE) {
+    return process.env.NEXT_PUBLIC_API_BASE;
+  }
+  
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  
+  // GitHub Codespaces
+  if (hostname.includes('app.github.dev')) {
+    const baseUrl = hostname.replace('-3000.', '-8000.');
+    return `${protocol}//${baseUrl}`;
+  }
+  
+  // Local development
+  return 'http://localhost:8000';
+};
 
 export default function Home() {
+  const [apiBase, setApiBase] = useState('http://localhost:8000');
   const [url, setUrl] = useState('');
   const [mode, setMode] = useState('video');
   const [platform, setPlatform] = useState(null);
@@ -14,6 +37,10 @@ export default function Home() {
   const [error, setError] = useState('');
   const [fileId, setFileId] = useState(null);
   const [filename, setFilename] = useState('');
+
+  useEffect(() => {
+    setApiBase(getApiBase());
+  }, []);
 
   function detectPlatform(url) {
     if (/youtube\.com|youtu\.be/.test(url)) return 'youtube';
@@ -27,14 +54,15 @@ export default function Home() {
     setInfo(null);
     setFileId(null);
     setFilename('');
-    setPlatform(detectPlatform(url));
-    if (!platform) {
+    const detectedPlatform = detectPlatform(url);
+    setPlatform(detectedPlatform);
+    if (!detectedPlatform) {
       setError('Unsupported or invalid URL.');
       return;
     }
     setAnalyzing(true);
     try {
-      const res = await axios.post(`${API_BASE}/analyze`, { url });
+      const res = await axios.post(`${apiBase}/analyze`, { url });
       setInfo(res.data);
     } catch (e) {
       setError(e.response?.data?.detail || 'Failed to analyze URL.');
@@ -46,7 +74,7 @@ export default function Home() {
     setError('');
     setDownloading(true);
     try {
-      const res = await axios.post(`${API_BASE}/download`, { url, mode });
+      const res = await axios.post(`${apiBase}/download`, { url, mode });
       setFileId(res.data.file_id);
       setFilename(res.data.filename);
     } catch (e) {
@@ -109,7 +137,7 @@ export default function Home() {
         </button>
         {fileId && (
           <a
-            href={`${API_BASE}/file/${fileId}`}
+            href={`${apiBase}/file/${fileId}`}
             className="block w-full bg-indigo-600 text-white py-2 rounded text-center mt-2"
             download={filename}
           >

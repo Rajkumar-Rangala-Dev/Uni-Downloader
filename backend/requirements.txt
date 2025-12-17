@@ -6,3 +6,6 @@ python-multipart
 pydantic
 httpx
 python-dotenv
+pycryptodomex
+secretstorage
+keyring
