@@ -74,25 +74,40 @@ export default function Home() {
     setError('');
     setDownloading(true);
     try {
+      // First try blob response (new backend)
       const res = await axios.post(`${apiBase}/download`, { url, mode }, {
         responseType: 'blob'
       });
       
-      // Create a download link for the blob
-      const blob = new Blob([res.data]);
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `download.${mode === 'mp3' ? 'mp3' : 'mp4'}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-      
-      setFileId('downloaded');
-      setFilename(`download.${mode === 'mp3' ? 'mp3' : 'mp4'}`);
+      // Check if response is actually JSON (old backend still deployed)
+      const contentType = res.headers['content-type'];
+      if (contentType && contentType.includes('application/json')) {
+        // Old backend response - parse JSON and use file endpoint
+        const blob = res.data;
+        const text = await blob.text();
+        const data = JSON.parse(text);
+        
+        // Show message and provide link to file endpoint
+        setFileId(data.file_id);
+        setFilename(data.filename);
+        setError('Note: Using fallback download method. Click the download link below.');
+      } else {
+        // New backend - blob response, trigger download
+        const blob = new Blob([res.data]);
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `download.${mode === 'mp3' ? 'mp3' : 'mp4'}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+        
+        setFileId('downloaded');
+        setFilename(`download.${mode === 'mp3' ? 'mp3' : 'mp4'}`);
+      }
     } catch (e) {
-      setError(e.response?.data?.detail || 'Download failed.');
+      setError(e.response?.data?.detail || e.message || 'Download failed.');
     }
     setDownloading(false);
   };
@@ -149,7 +164,16 @@ export default function Home() {
         >
           {downloading ? 'Processing...' : `Download ${mode === 'mp3' ? 'MP3' : 'Video'}`}
         </button>
-        {fileId && (
+        {fileId && fileId !== 'downloaded' && (
+          <a
+            href={`${apiBase}/file/${fileId}`}
+            className="block w-full bg-indigo-600 text-white py-2 rounded text-center mt-2"
+            download={filename}
+          >
+            ⬇️ Download {filename}
+          </a>
+        )}
+        {fileId === 'downloaded' && (
           <div className="w-full bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mt-2">
             ✅ Download started! Check your downloads folder for {filename}
           </div>
