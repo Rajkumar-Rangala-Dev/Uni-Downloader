@@ -74,9 +74,23 @@ export default function Home() {
     setError('');
     setDownloading(true);
     try {
-      const res = await axios.post(`${apiBase}/download`, { url, mode });
-      setFileId(res.data.file_id);
-      setFilename(res.data.filename);
+      const res = await axios.post(`${apiBase}/download`, { url, mode }, {
+        responseType: 'blob'
+      });
+      
+      // Create a download link for the blob
+      const blob = new Blob([res.data]);
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `download.${mode === 'mp3' ? 'mp3' : 'mp4'}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      setFileId('downloaded');
+      setFilename(`download.${mode === 'mp3' ? 'mp3' : 'mp4'}`);
     } catch (e) {
       setError(e.response?.data?.detail || 'Download failed.');
     }
@@ -136,13 +150,9 @@ export default function Home() {
           {downloading ? 'Processing...' : `Download ${mode === 'mp3' ? 'MP3' : 'Video'}`}
         </button>
         {fileId && (
-          <a
-            href={`${apiBase}/file/${fileId}`}
-            className="block w-full bg-indigo-600 text-white py-2 rounded text-center mt-2"
-            download={filename}
-          >
-            ⬇️ Download {filename}
-          </a>
+          <div className="w-full bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mt-2">
+            ✅ Download started! Check your downloads folder for {filename}
+          </div>
         )}
         {error && <div className="text-red-600 mt-2 text-sm">{error}</div>}
         <div className="text-xs text-gray-500 mt-4 text-center">

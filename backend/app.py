@@ -40,7 +40,7 @@ async def analyze(request: AnalyzeRequest):
     return info
 
 @app.post("/download")
-async def download(request: DownloadRequest, background_tasks: BackgroundTasks):
+async def download(request: DownloadRequest):
     url = request.url
     mode = request.mode
     if not validate_url(url):
@@ -48,10 +48,20 @@ async def download(request: DownloadRequest, background_tasks: BackgroundTasks):
     file_id = str(uuid.uuid4())
     try:
         file_path, filename = await process_download(url, mode, file_id)
+        # Return file directly to avoid ephemeral storage issues
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=500, detail="File processing failed.")
+        response = FileResponse(
+            file_path, 
+            filename=filename,
+            media_type='application/octet-stream',
+            background=BackgroundTasks()
+        )
+        # Schedule cleanup after response is sent
+        response.background.add_task(cleanup_file, file_path)
+        return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    background_tasks.add_task(cleanup_file, file_path)
-    return {"file_id": file_id, "filename": filename}
 
 @app.get("/file/{file_id}")
 async def get_file(file_id: str):
